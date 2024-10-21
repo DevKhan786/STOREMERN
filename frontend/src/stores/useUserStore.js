@@ -18,7 +18,6 @@ export const useUserStore = create((set, get) => ({
     try {
       const res = await axios.post("/auth/signup", { name, email, password });
       set({ user: res.data, loading: false });
-      toast.success("Account created successfully");
     } catch (error) {
       set({ loading: false });
       toast.error(error.response.data.message || "An error occurred");
@@ -29,7 +28,7 @@ export const useUserStore = create((set, get) => ({
 
     try {
       const res = await axios.post("/auth/login", { email, password });
-      toast.success("Logged in successfully");
+
       set({ user: res.data, loading: false });
     } catch (error) {
       set({ loading: false });
@@ -40,7 +39,6 @@ export const useUserStore = create((set, get) => ({
   logout: async () => {
     try {
       await axios.post("/auth/logout");
-      toast.success("Logged out successfully");
       set({ user: null });
     } catch (error) {
       toast.error(
@@ -76,7 +74,7 @@ export const useUserStore = create((set, get) => ({
   },
 }));
 
-// Axios interceptor for token refresh
+
 let refreshPromise = null;
 
 axios.interceptors.response.use(
@@ -87,17 +85,20 @@ axios.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        // If a refresh is already in progress, wait for it to complete
         if (refreshPromise) {
           await refreshPromise;
           return axios(originalRequest);
         }
 
+        // Start a new refresh process
         refreshPromise = useUserStore.getState().refreshToken();
         await refreshPromise;
         refreshPromise = null;
 
         return axios(originalRequest);
       } catch (refreshError) {
+        // If refresh fails, redirect to login or handle as needed
         useUserStore.getState().logout();
         return Promise.reject(refreshError);
       }
